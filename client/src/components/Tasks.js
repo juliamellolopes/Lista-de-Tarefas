@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import { FaTrash, FaCheck, FaEdit } from "react-icons/fa";
+import { FaTrash, FaCheck, FaEdit, FaUndo } from "react-icons/fa";
+import "./tasks.css"; // Adicione este arquivo para estilizações personalizadas
 
 const Tasks = () => {
   const [tasks, setTasks] = useState([]);
-  const [task, setTask] = useState("");
+  const [title, setTitle] = useState("");
+  const [text, setText] = useState("");
   const [editTaskId, setEditTaskId] = useState(null);
-  const [editTaskText, setEditTaskText] = useState("");
+  const [editTitle, setEditTitle] = useState("");
+  const [editText, setEditText] = useState("");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -38,13 +41,14 @@ const Tasks = () => {
     try {
       const res = await axios.post(
         "http://localhost:5000/api/tasks",
-        { text: task },
+        { title, text },
         {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
       setTasks([...tasks, res.data]);
-      setTask("");
+      setTitle("");
+      setText("");
     } catch (err) {
       console.error(err);
     }
@@ -78,13 +82,29 @@ const Tasks = () => {
     }
   };
 
+  const reactivateTask = async (id) => {
+    const token = localStorage.getItem("token");
+    try {
+      const res = await axios.put(
+        `http://localhost:5000/api/tasks/${id}`,
+        { completed: false },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      setTasks(tasks.map((task) => (task._id === id ? res.data : task)));
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   const editTask = async (e) => {
     e.preventDefault();
     const token = localStorage.getItem("token");
     try {
       const res = await axios.put(
         `http://localhost:5000/api/tasks/${editTaskId}`,
-        { text: editTaskText },
+        { title: editTitle, text: editText },
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -93,7 +113,8 @@ const Tasks = () => {
         tasks.map((task) => (task._id === editTaskId ? res.data : task))
       );
       setEditTaskId(null);
-      setEditTaskText("");
+      setEditTitle("");
+      setEditText("");
     } catch (err) {
       console.error(err);
     }
@@ -101,12 +122,14 @@ const Tasks = () => {
 
   const startEditTask = (task) => {
     setEditTaskId(task._id);
-    setEditTaskText(task.text);
+    setEditTitle(task.title);
+    setEditText(task.text);
   };
 
   const cancelEditTask = () => {
     setEditTaskId(null);
-    setEditTaskText("");
+    setEditTitle("");
+    setEditText("");
   };
 
   const logout = () => {
@@ -114,90 +137,119 @@ const Tasks = () => {
     navigate("/login");
   };
 
+  const renderTask = (task) => (
+    <li
+      key={task._id}
+      className={`task-item ${task.completed ? "completed" : ""}`}
+    >
+      {editTaskId === task._id ? (
+        <form onSubmit={editTask} className="flex flex-1 flex-col">
+          <input
+            type="text"
+            value={editTitle}
+            onChange={(e) => setEditTitle(e.target.value)}
+            className="task-input"
+          />
+          <input
+            type="text"
+            value={editText}
+            onChange={(e) => setEditText(e.target.value)}
+            className="task-input"
+          />
+          <div className="task-actions">
+            <button type="submit" className="btn-save">
+              Save
+            </button>
+            <button
+              onClick={cancelEditTask}
+              type="button"
+              className="btn-cancel"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      ) : (
+        <>
+          <div className="task-content">
+            <span className="task-title">{task.title}</span>
+            <div className="task-icons">
+              {task.completed ? (
+                <button
+                  onClick={() => reactivateTask(task._id)}
+                  className="text-yellow-500"
+                >
+                  <FaUndo />
+                </button>
+              ) : (
+                <button
+                  onClick={() => completeTask(task._id)}
+                  className="text-green-500"
+                >
+                  <FaCheck />
+                </button>
+              )}
+              <button
+                onClick={() => startEditTask(task)}
+                className="text-blue-500"
+              >
+                <FaEdit />
+              </button>
+              <button
+                onClick={() => deleteTask(task._id)}
+                className="text-red-500"
+              >
+                <FaTrash />
+              </button>
+            </div>
+          </div>
+          <span className="task-text">{task.text}</span>
+          <span className="task-user">Created by: {task.user.username}</span>
+        </>
+      )}
+    </li>
+  );
+
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-blue-900">
-      <div className="w-full max-w-2xl p-4 bg-white rounded-lg shadow-lg">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-2xl font-bold">Tasks</h2>
-          <button
-            onClick={logout}
-            className="bg-red-500 text-white px-4 py-2 rounded"
-          >
+    <div className="tasks-container">
+      <div className="tasks-box">
+        <div className="tasks-header">
+          <h2>Tasks</h2>
+          <button onClick={logout} className="btn-logout">
             Logout
           </button>
         </div>
-        <form onSubmit={addTask} className="mb-4">
+        <form onSubmit={addTask} className="tasks-form">
           <input
             type="text"
-            value={task}
-            onChange={(e) => setTask(e.target.value)}
-            placeholder="Add a new task"
-            className="w-full p-2 mb-2 border rounded"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Title"
+            className="task-input"
           />
-          <button
-            type="submit"
-            className="w-full bg-blue-500 text-white p-2 rounded"
-          >
+          <input
+            type="text"
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            placeholder="Text"
+            className="task-input"
+          />
+          <button type="submit" className="btn-add">
             Add Task
           </button>
         </form>
-        <ul>
-          {tasks.map((task) => (
-            <li
-              key={task._id}
-              className="flex justify-between items-center p-2 mb-2 bg-white rounded shadow"
-            >
-              {editTaskId === task._id ? (
-                <form onSubmit={editTask} className="flex flex-1">
-                  <input
-                    type="text"
-                    value={editTaskText}
-                    onChange={(e) => setEditTaskText(e.target.value)}
-                    className="flex-1 p-2 border rounded"
-                  />
-                  <button type="submit" className="text-blue-500 px-2">
-                    Save
-                  </button>
-                  <button
-                    onClick={cancelEditTask}
-                    type="button"
-                    className="text-red-500 px-2"
-                  >
-                    Cancel
-                  </button>
-                </form>
-              ) : (
-                <>
-                  <span
-                    className={`flex-1 ${task.completed ? "line-through" : ""}`}
-                  >
-                    {task.text}
-                  </span>
-                  <div className="flex space-x-2">
-                    <button
-                      onClick={() => completeTask(task._id)}
-                      className="text-green-500"
-                    >
-                      <FaCheck />
-                    </button>
-                    <button
-                      onClick={() => startEditTask(task)}
-                      className="text-blue-500"
-                    >
-                      <FaEdit />
-                    </button>
-                    <button
-                      onClick={() => deleteTask(task._id)}
-                      className="text-red-500"
-                    >
-                      <FaTrash />
-                    </button>
-                  </div>
-                </>
-              )}
-            </li>
-          ))}
-        </ul>
+        <div>
+          <h3 className="tasks-subheader">Active Tasks</h3>
+          <ul className="tasks-list">
+            {tasks.filter((task) => !task.completed).map(renderTask)}
+          </ul>
+        </div>
+        <div>
+          <h3 className="tasks-subheader">Completed Tasks</h3>
+          <ul className="tasks-list">
+            {tasks.filter((task) => task.completed).map(renderTask)}
+          </ul>
+        </div>
       </div>
     </div>
   );
