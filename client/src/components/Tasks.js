@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import { FaTrash, FaCheck } from "react-icons/fa";
+import { FaTrash, FaCheck, FaEdit } from "react-icons/fa";
 
 const Tasks = () => {
   const [tasks, setTasks] = useState([]);
   const [task, setTask] = useState("");
+  const [editTaskId, setEditTaskId] = useState(null);
+  const [editTaskText, setEditTaskText] = useState("");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -76,6 +78,37 @@ const Tasks = () => {
     }
   };
 
+  const editTask = async (e) => {
+    e.preventDefault();
+    const token = localStorage.getItem("token");
+    try {
+      const res = await axios.put(
+        `http://localhost:5000/api/tasks/${editTaskId}`,
+        { text: editTaskText },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      setTasks(
+        tasks.map((task) => (task._id === editTaskId ? res.data : task))
+      );
+      setEditTaskId(null);
+      setEditTaskText("");
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const startEditTask = (task) => {
+    setEditTaskId(task._id);
+    setEditTaskText(task.text);
+  };
+
+  const cancelEditTask = () => {
+    setEditTaskId(null);
+    setEditTaskText("");
+  };
+
   const logout = () => {
     localStorage.removeItem("token");
     navigate("/login");
@@ -114,25 +147,54 @@ const Tasks = () => {
               key={task._id}
               className="flex justify-between items-center p-2 mb-2 bg-white rounded shadow"
             >
-              <span
-                className={`flex-1 ${task.completed ? "line-through" : ""}`}
-              >
-                {task.text}
-              </span>
-              <div className="flex space-x-2">
-                <button
-                  onClick={() => completeTask(task._id)}
-                  className="text-green-500"
-                >
-                  <FaCheck />
-                </button>
-                <button
-                  onClick={() => deleteTask(task._id)}
-                  className="text-red-500"
-                >
-                  <FaTrash />
-                </button>
-              </div>
+              {editTaskId === task._id ? (
+                <form onSubmit={editTask} className="flex flex-1">
+                  <input
+                    type="text"
+                    value={editTaskText}
+                    onChange={(e) => setEditTaskText(e.target.value)}
+                    className="flex-1 p-2 border rounded"
+                  />
+                  <button type="submit" className="text-blue-500 px-2">
+                    Save
+                  </button>
+                  <button
+                    onClick={cancelEditTask}
+                    type="button"
+                    className="text-red-500 px-2"
+                  >
+                    Cancel
+                  </button>
+                </form>
+              ) : (
+                <>
+                  <span
+                    className={`flex-1 ${task.completed ? "line-through" : ""}`}
+                  >
+                    {task.text}
+                  </span>
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={() => completeTask(task._id)}
+                      className="text-green-500"
+                    >
+                      <FaCheck />
+                    </button>
+                    <button
+                      onClick={() => startEditTask(task)}
+                      className="text-blue-500"
+                    >
+                      <FaEdit />
+                    </button>
+                    <button
+                      onClick={() => deleteTask(task._id)}
+                      className="text-red-500"
+                    >
+                      <FaTrash />
+                    </button>
+                  </div>
+                </>
+              )}
             </li>
           ))}
         </ul>
