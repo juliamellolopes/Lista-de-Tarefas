@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { FaTrash, FaCheck, FaEdit, FaUndo } from "react-icons/fa";
-import "./tasks.css"; // Adicione este arquivo para estilizações personalizadas
+import "./tasks.css";
 
 const Tasks = () => {
   const [tasks, setTasks] = useState([]);
