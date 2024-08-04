@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import { FaTrash, FaCheck, FaEdit, FaUndo } from "react-icons/fa";
+import { FaTrash, FaCheck, FaEdit, FaUndo, FaSignOutAlt } from "react-icons/fa";
 import "./tasks.css";
 
 const Tasks = () => {
@@ -216,7 +216,7 @@ const Tasks = () => {
         <div className="tasks-header">
           <h2>Tasks</h2>
           <button onClick={logout} className="btn-logout">
-            Logout
+            <FaSignOutAlt size={24} />
           </button>
         </div>
         <form onSubmit={addTask} className="tasks-form">

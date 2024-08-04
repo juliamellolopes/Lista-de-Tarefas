@@ -32,8 +32,7 @@ body {
 }
 
 .btn-logout {
-    background: #3182ce;
-    color: white;
+    color: #2b6cb0;
     padding: 8px 16px;
     border: none;
     border-radius: 4px;
@@ -42,7 +41,7 @@ body {
 }
 
 .btn-logout:hover {
-    background: #2b6cb0;
+    background: white;
 }
 
 .tasks-form {
